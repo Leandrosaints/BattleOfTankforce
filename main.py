@@ -1,8 +1,10 @@
+import math
+
 import pygame
 import random
 import ctypes
 from config import *
-
+from hud import HUD
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 
@@ -24,10 +26,10 @@ tank_width, tank_height = tank_img.get_size()
 tank_pos = [50, HEIGHT // 2 - tank_height // 2]
 tank_speed = 3
 tank_health = 3
-shield_active = False
-shield_duration = 300
+shield_active =True# False
+shield_duration = 3
 shield_timer = 0
-
+aero_active = True
 enemy_img = pygame.image.load("img/Enemy/enemy.png").convert_alpha()
 enemy_img = pygame.transform.scale(enemy_img, (50, 20))
 
@@ -35,11 +37,11 @@ item_images = {
     'health': pygame.image.load("img/itens/healt.png").convert_alpha(),
     'shield': pygame.image.load("img/itens/escudo.png").convert_alpha(),
     'upgrade': pygame.image.load("img/itens/laser.png").convert_alpha(),
-    'heli': pygame.image.load("img/itens/healt.png").convert_alpha(),  # Imagem do item de helicóptero
+    'aero': pygame.image.load("img/itens/icon_aero.png").convert_alpha(),  # Imagem do item de helicóptero
 }
 
 heli_img = pygame.image.load("img/F16.png").convert_alpha()
-heli_img = pygame.transform.scale(heli_img, (80, 20))
+heli = pygame.transform.scale(heli_img, (70, 18))
 bomb_img = pygame.image.load("img/itens/misseis.png").convert_alpha()
 bomb_img = pygame.transform.scale(bomb_img, (10, 20))
 
@@ -156,7 +158,7 @@ class Bombardeiro:
     def __init__(self):
         self.x = -80
         self.y =  HEIGHT // 2 - 30
-        self.speed = 2
+        self.speed = 5
         self.dropping_bomb = False
         self.bomb_timer = 30
 
@@ -165,7 +167,7 @@ class Bombardeiro:
         if self.x > WIDTH:
             helicopters.remove(self)
 
-        if not self.dropping_bomb and random.random() < 0.02:
+        if not self.dropping_bomb and random.random() < 0.05:
             bombs.append(Bomb((self.x + 40, self.y + 20)))
             self.dropping_bomb = True
 
@@ -176,31 +178,36 @@ class Bombardeiro:
                 self.bomb_timer = 30
 
     def draw(self, surface):
-        surface.blit(heli_img, (self.x, self.y))
+        surface.blit(heli, (self.x, self.y))
 
 
 # Classe de Bomba
 class Bomb:
     def __init__(self, pos):
         self.x, self.y = pos
-        self.speed = 2
+        self.x_speed = 2  # Velocidade na horizontal
+        self.y_speed = 1  # Velocidade na vertical
 
     def update(self):
-        self.y += self.speed
-        if self.y > HEIGHT:
+        # Atualiza a posição da bomba
+        self.x += self.x_speed
+        self.y += self.y_speed
+
+
+        # Remove a bomba se ela sair da tela
+        if self.y > HEIGHT or self.x > WIDTH or self.x < 0:
             bombs.remove(self)
         else:
-            for enemy in enemies:
+            # Verifica colisão com inimigos
+            for enemy in enemies[:]:
                 if pygame.Rect(self.x, self.y, 10, 20).colliderect(enemy.get_rect()):
                     bombs.remove(self)
                     # Adiciona uma nova explosão baseada na posição da bomba
                     explosions.append({"pos": (self.x + 5, self.y + 10), "radius": 0})
-                    enemy.health -= 1
-                    if enemy.health <= 0:
-                        enemies.remove(enemy)
                     break
 
     def draw(self, surface):
+        # Desenha a bomba na tela
         surface.blit(bomb_img, (self.x, self.y))
 
 
@@ -235,13 +242,14 @@ def check_explosion_hits(explosion):
             # Atualize o placar ou qualquer outra lógica aqui
 
 def main():
-    global game_over, shield_active, shield_timer, tank_health, tank_speed, explosions
+    global game_over, shield_active, tank_health, tank_speed, explosions, shield_duration, aero_active
+    hud = HUD(tank_health, shield_active,shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
 
     enemy_timer = 0
     enemy_count = 0
     waiting_for_items = False
     item_wait_timer = 0
-    heli_active = True
+
 
     while not game_over:
         for event in pygame.event.get():
@@ -252,9 +260,9 @@ def main():
                     game_over = True
                 if event.key == pygame.K_SPACE:
                     bullets.append(Bullet((tank_pos[0] + tank_width, tank_pos[1] + tank_height // 2)))
-                if event.key == pygame.K_h and heli_active:  # Tecla para chamar o helicóptero
+                if event.key == pygame.K_h and aero_active:  # Tecla para chamar o helicóptero
                     helicopters.append(Bombardeiro())
-                    heli_active = False
+                    aero_active = False
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and tank_pos[0] > 0:
@@ -262,10 +270,13 @@ def main():
         if keys[pygame.K_RIGHT] and tank_pos[0] < WIDTH - tank_width:
             tank_pos[0] += tank_speed
 
-        if shield_active:
-            shield_timer -= 1
-            if shield_timer <= 0:
-                shield_active = False
+        if shield_duration <= 0:
+            shield_active = False
+        """ if shield_active:
+            #shield_timer -= 1
+            #shield_duration -= 1
+            if shield_duration <= 0:
+                shield_active = False"""
 
         screen.fill((0, 0, 0))
         for i in range(num_repeats):
@@ -299,32 +310,42 @@ def main():
             if bullet.x < 0:
                 enemy_bullets.remove(bullet)
             elif bullet.get_rect().colliderect(pygame.Rect(tank_pos[0], tank_pos[1], tank_width, tank_height)):
+
                 enemy_bullets.remove(bullet)
+
+                shield_duration -= 1
+                    #print(shield_duration)
+
+
                 if not shield_active:
-                    tank_health -= 1
+                    tank_health -= 0.5
                 if tank_health <= 0:
                     game_over = True
 
-        if enemy_timer <= 0:
-            enemy_timer = random.randint(60, 120)
-            enemies.append(Enemy((WIDTH - 50, random.randint(0, HEIGHT - 50))))
-        else:
-            enemy_timer -= 1
-
-        for enemy in enemies:
-            enemy.update()
-            enemy.draw(screen)
-
-        if not waiting_for_items and random.random() < 0.01:
-            item_type = random.choice(list(item_images.keys()))
-            items.append(Item((random.randint(50, WIDTH - 50), -30), item_type))
-            waiting_for_items = True
+        if not waiting_for_items:
+            if enemy_count < 5:
+                if enemy_timer <= 0:
+                    enemy_y = HEIGHT // 2 - 5
+                    enemies.append(Enemy((WIDTH, enemy_y)))
+                    enemy_count += 1
+                    enemy_timer = 60
+                else:
+                    enemy_timer -= 1
+            else:
+                if not enemies:
+                    waiting_for_items = True
+                    item_wait_timer = 300  # Tempo de espera para coleta de itens (5 segundos)
 
         if waiting_for_items:
-            item_wait_timer += 1
-            if item_wait_timer >= 300:
+            if item_wait_timer > 0:
+                item_wait_timer -= 1
+            else:
+                if random.random() < 0.1:
+                    item_type = random.choice(list(item_images.keys()))
+                    item_x = random.randint(0, WIDTH - 10)
+                    items.append(Item((item_x, 0), item_type))
                 waiting_for_items = False
-                item_wait_timer = 0
+                enemy_count = 0  # Permitir novos inimigos após a coleta de itens
 
         for item in items[:]:
             # item.update()
@@ -337,12 +358,16 @@ def main():
                     tank_health += 1
                 elif item.type == 'shield':
                     shield_active = True
-                    shield_timer = shield_duration
+                    shield_duration = 3
                 elif item.type == 'upgrade':
                     tank_speed += 1
-                elif item.type == 'heli':
-                    heli_active = True
-
+                elif item.type == 'aero':
+                    aero_active = True
+        hud.update(tank_health, shield_duration, aero_active)
+        hud.draw(screen)
+        for enemy in enemies:
+            enemy.update()
+            enemy.draw(screen)
         for heli in helicopters[:]:
             heli.update()
             heli.draw(screen)
