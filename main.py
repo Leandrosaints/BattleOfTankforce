@@ -5,6 +5,8 @@ import random
 import ctypes
 from config import *
 from hud import HUD
+from get_name_input import *
+from dados_json import *
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 
@@ -15,15 +17,15 @@ ctypes.windll.user32.SetWindowPos(pygame.display.get_wm_info()['window'], 0, x_p
 clock = pygame.time.Clock()
 game_over = False
 
-background = pygame.image.load('img/bg.jpg').convert_alpha()
+background = pygame.image.load('img/bg_2.jpg').convert_alpha()
 background_width = background.get_width()
 num_repeats = (WIDTH // background_width) + 1
 
-# Imagens
+# Imagenso
 tank_img = pygame.image.load("img/tank.png").convert_alpha()
 tank_img = pygame.transform.scale(tank_img, (50, 20))
 tank_width, tank_height = tank_img.get_size()
-tank_pos = [50, HEIGHT // 2 - tank_height // 2]
+tank_pos = [50, HEIGHT // 2 - tank_height // 3]
 tank_speed = 3
 tank_health = 3
 shield_active =True# False
@@ -244,7 +246,9 @@ def check_explosion_hits(explosion):
 def main():
     global game_over, shield_active, tank_health, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active,shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
-
+    caminho_json = 'pontuacoes.json'
+    nome_jogador = get_player_name(screen)
+    verificar_ou_criar_json(caminho_json)
     enemy_timer = 0
     enemy_count = 0
     waiting_for_items = False
