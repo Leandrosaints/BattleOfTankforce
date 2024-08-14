@@ -5,7 +5,7 @@ import random
 import ctypes
 from config import *
 from hud import HUD
-from get_name_input import *
+from get_name_input import IntroInput, draw_text_button, draw_text
 from dados_json import *
 from functionEss import  *
 pygame.init()
@@ -49,6 +49,7 @@ img_aero = pygame.transform.scale(heli_img, (70, 18))
 bomb_img = pygame.image.load("img/itens/misseis.png").convert_alpha()
 bomb_img = pygame.transform.scale(bomb_img, (10, 20))
 
+get_name = IntroInput()
 
 # Classe de Partícula
 class Particle:
@@ -230,16 +231,18 @@ def check_explosion_hits(explosion):
         enemy_center = (enemy.x + enemy.width // 2, enemy.y + enemy.height // 2)
         distance = pygame.math.Vector2(enemy_center).distance_to(explosion["pos"])
         if distance <= explosion["radius"]:
-            score += 2
+
             enemies.remove(enemy)
+            score += 1
             # Atualize o placar ou qualquer outra lógica aqui
 # Fonte para o texto do score e game over
 font = pygame.font.SysFont(None, 15)
+
 def main():
     global game_over,score, shield_active, tank_health,tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active,shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
-    nome_jogador = get_player_name(screen)
+    nome_jogador = get_name.get_player_name(screen)
     verificar_ou_criar_json(caminho_json)
     enemy_timer = 0
     enemy_count = 0
@@ -263,7 +266,7 @@ def main():
                 elif event.key == pygame.K_SPACE:
                     bullets.append(Bullet((tank_pos[0] + tank_width, tank_pos[1] + tank_height // 2)))
                 elif event.key == pygame.K_h and aero_active:  # Tecla para chamar o helicóptero
-                    helicopters.append(Bombardeiro(helicopters, bombs))
+                    helicopters.append(Bombardeiro(helicopters, bombs, 5))
                     aero_active = False
 
         keys = pygame.key.get_pressed()

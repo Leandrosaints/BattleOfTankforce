@@ -21,10 +21,10 @@ class Item:
         return pygame.Rect(self.x, self.y, self.width, self.height)
 
 class Bombardeiro:
-    def __init__(self,aeronave, bombs):
+    def __init__(self,aeronave, bombs, speed):
         self.x = -80
         self.y =  HEIGHT // 2 - 30
-        self.speed = 5
+        self.speed = speed
         self.dropping_bomb = False
         self.bomb_timer = 30
         self.aeronave = aeronave
