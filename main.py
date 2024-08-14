@@ -7,6 +7,7 @@ from config import *
 from hud import HUD
 from get_name_input import *
 from dados_json import *
+from functionEss import  *
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 
@@ -17,7 +18,7 @@ ctypes.windll.user32.SetWindowPos(pygame.display.get_wm_info()['window'], 0, x_p
 clock = pygame.time.Clock()
 game_over = False
 
-background = pygame.image.load('img/bg_2.jpg').convert_alpha()
+background = pygame.image.load('img/bg_3.jpg').convert_alpha()
 background_width = background.get_width()
 num_repeats = (WIDTH // background_width) + 1
 
@@ -31,6 +32,7 @@ tank_health = 3
 shield_active =True# False
 shield_duration = 3
 shield_timer = 0
+tank_speed_duration = 3
 aero_active = True
 enemy_img = pygame.image.load("img/Enemy/enemy.png").convert_alpha()
 enemy_img = pygame.transform.scale(enemy_img, (50, 20))
@@ -43,7 +45,7 @@ item_images = {
 }
 
 heli_img = pygame.image.load("img/F16.png").convert_alpha()
-heli = pygame.transform.scale(heli_img, (70, 18))
+img_aero = pygame.transform.scale(heli_img, (70, 18))
 bomb_img = pygame.image.load("img/itens/misseis.png").convert_alpha()
 bomb_img = pygame.transform.scale(bomb_img, (10, 20))
 
@@ -131,88 +133,76 @@ class Enemy:
     def drop_item(self):
         if random.random() < 0.5:  # Chance de 50% para dropar um item
             item_type = random.choice(list(item_images.keys()))
-            items.append(Item((self.x, self.y), item_type))
+            items.append(Item((self.x, self.y), item_type, item_images))
+
+def game_over_screen():
+    global game_over, score
+    game_over = True
+    font = pygame.font.SysFont(None, 25)
+
+    while game_over:
+        screen.fill(BLACK)
+        draw_text('Game Over!', font, RED, screen, WIDTH // 2 - 50, HEIGHT // 2)
+        draw_text('Press R to Restart or Q to Quit', font, RED, screen, WIDTH // 2 - 120, HEIGHT // 2 - 20)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()  # Sai do jogo completamente
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    restart_game()  # Função para reiniciar o jogo
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+                    exit()  # Sai do jogo completamente
 
 
+def restart_game():
+    global game_over, score, enemies, bullets, items, tank_pos, enemy_bullets, particles, shield_duration,score
+    global shield_active,shield_timer, aero_active, explosions,helicopters, bombs, tank_health, tank_speed
 
-# Classe de Item Coletável
-class Item:
-    def __init__(self, pos, item_type):
-        self.x, self.y = pos
-        self.type = item_type
-        self.img = item_images[item_type]
-        self.img_scale = pygame.transform.scale(self.img, (15, 15))
-        self.width, self.height = (10, 10)
-        self.speed = 2
+    # Reinicializar variáveis principais
+    game_over = False
+    score = 0
+    particles = []
+    bullets = []
+    enemy_bullets = []
+    enemies = []
+    items = []
+    helicopters = []
+    bombs = []
+    explosions = []
+    tank_health = 3
+    tank_speed = 3
+    score = 0
+    # Redefinir a posição inicial da nave
+    tank_pos = [50, HEIGHT // 2 - tank_height // 3]
 
-    def update(self):
-        self.y += self.speed
+    # Reiniciar estados e temporizadores
+    shield_active = False
+    shield_timer = 0
+    shield_duration = 3
+    aero_active = True
 
-    def draw(self, surface):
-        surface.blit(self.img_scale, (self.x, self.y))
-
-    def get_rect(self):
-        return pygame.Rect(self.x, self.y, self.width, self.height)
-
-
-# Classe de Helicóptero
-class Bombardeiro:
-    def __init__(self):
-        self.x = -80
-        self.y =  HEIGHT // 2 - 30
-        self.speed = 5
-        self.dropping_bomb = False
-        self.bomb_timer = 30
-
-    def update(self):
-        self.x += self.speed
-        if self.x > WIDTH:
-            helicopters.remove(self)
-
-        if not self.dropping_bomb and random.random() < 0.05:
-            bombs.append(Bomb((self.x + 40, self.y + 20)))
-            self.dropping_bomb = True
-
-        if self.dropping_bomb:
-            self.bomb_timer -= 1
-            if self.bomb_timer <= 0:
-                self.dropping_bomb = False
-                self.bomb_timer = 30
-
-    def draw(self, surface):
-        surface.blit(heli, (self.x, self.y))
+    # Outras variáveis globais que possam ser afetadas pelo estado do jogo podem ser redefinidas aqui, se necessário.
 
 
-# Classe de Bomba
-class Bomb:
-    def __init__(self, pos):
-        self.x, self.y = pos
-        self.x_speed = 2  # Velocidade na horizontal
-        self.y_speed = 1  # Velocidade na vertical
-
-    def update(self):
-        # Atualiza a posição da bomba
-        self.x += self.x_speed
-        self.y += self.y_speed
-
-
-        # Remove a bomba se ela sair da tela
-        if self.y > HEIGHT or self.x > WIDTH or self.x < 0:
-            bombs.remove(self)
-        else:
-            # Verifica colisão com inimigos
-            for enemy in enemies[:]:
-                if pygame.Rect(self.x, self.y, 10, 20).colliderect(enemy.get_rect()):
-                    bombs.remove(self)
-                    # Adiciona uma nova explosão baseada na posição da bomba
-                    explosions.append({"pos": (self.x + 5, self.y + 10), "radius": 0})
-                    break
-
-    def draw(self, surface):
-        # Desenha a bomba na tela
-        surface.blit(bomb_img, (self.x, self.y))
-
-
+def pause():
+    paused = True
+    font = pygame.font.SysFont(None, 30)
+    draw_text('Paused. Press P to continue.', font, RED, screen, WIDTH // 2 - 100, HEIGHT // 2 - 10)
+    pygame.display.flip()
+    while paused:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    paused = False
+        clock.tick(5)
 
 # Lista de partículas, tiros, inimigos, itens coletáveis, helicópteros e bombas
 particles = []
@@ -225,7 +215,7 @@ bombs = []
 explosions = []
 explosion_radius_increment = 2
 max_explosion_radius = 50  # Tamanho máximo da explosão
-
+score = 0
 def draw_explosions():
     for explosion in explosions[:]:
         pygame.draw.circle(screen, RED, explosion["pos"], explosion["radius"], 2)
@@ -240,11 +230,13 @@ def check_explosion_hits(explosion):
         enemy_center = (enemy.x + enemy.width // 2, enemy.y + enemy.height // 2)
         distance = pygame.math.Vector2(enemy_center).distance_to(explosion["pos"])
         if distance <= explosion["radius"]:
+            score += 2
             enemies.remove(enemy)
             # Atualize o placar ou qualquer outra lógica aqui
-
+# Fonte para o texto do score e game over
+font = pygame.font.SysFont(None, 15)
 def main():
-    global game_over, shield_active, tank_health, tank_speed, explosions, shield_duration, aero_active
+    global game_over,score, shield_active, tank_health,tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active,shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
     nome_jogador = get_player_name(screen)
@@ -262,17 +254,26 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     game_over = True
-                if event.key == pygame.K_SPACE:
+                elif event.key == pygame.K_LCTRL:
+                    pygame.quit()
+                    exit()
+                elif event.key == pygame.K_p:
+
+                    pause()
+                elif event.key == pygame.K_SPACE:
                     bullets.append(Bullet((tank_pos[0] + tank_width, tank_pos[1] + tank_height // 2)))
-                if event.key == pygame.K_h and aero_active:  # Tecla para chamar o helicóptero
-                    helicopters.append(Bombardeiro())
+                elif event.key == pygame.K_h and aero_active:  # Tecla para chamar o helicóptero
+                    helicopters.append(Bombardeiro(helicopters, bombs))
                     aero_active = False
 
         keys = pygame.key.get_pressed()
+        moving = False
         if keys[pygame.K_LEFT] and tank_pos[0] > 0:
             tank_pos[0] -= tank_speed
+            moving = True
         if keys[pygame.K_RIGHT] and tank_pos[0] < WIDTH - tank_width:
             tank_pos[0] += tank_speed
+            moving = True
 
         if shield_duration <= 0:
             shield_active = False
@@ -288,6 +289,10 @@ def main():
 
         screen.blit(tank_img, tank_pos)
 
+
+        # Gerar partículas se o tanque estiver se movendo
+        if moving:
+            particles.append(Particle((tank_pos[0] + tank_width // 2 - 20, tank_pos[1] + tank_height)))
         for particle in particles:
             particle.update()
             particle.draw(screen)
@@ -305,6 +310,7 @@ def main():
                         enemy.health -= 1
                         if enemy.health <= 0:
                             enemy.drop_item()  # Adiciona um item quando o inimigo é destruído
+                            score += 1
                             enemies.remove(enemy)
                         break
 
@@ -347,7 +353,7 @@ def main():
                 if random.random() < 0.1:
                     item_type = random.choice(list(item_images.keys()))
                     item_x = random.randint(0, WIDTH - 10)
-                    items.append(Item((item_x, 0), item_type))
+                    items.append(Item((item_x, 0), item_type, item_images))
                 waiting_for_items = False
                 enemy_count = 0  # Permitir novos inimigos após a coleta de itens
 
@@ -359,12 +365,19 @@ def main():
             elif item.get_rect().colliderect(pygame.Rect(tank_pos[0], tank_pos[1], tank_width, tank_height)):
                 items.remove(item)
                 if item.type == 'health':
-                    tank_health += 1
+                    tank_health += 0.5
+                    if tank_health >=3:
+                        tank_health =3
                 elif item.type == 'shield':
                     shield_active = True
                     shield_duration = 3
                 elif item.type == 'upgrade':
                     tank_speed += 1
+                    if tank_speed >=5:
+                        tank_speed_duration -= 0.5
+                    if tank_speed_duration <= 0:
+                        tank_speed = 3
+
                 elif item.type == 'aero':
                     aero_active = True
         hud.update(tank_health, shield_duration, aero_active)
@@ -374,12 +387,17 @@ def main():
             enemy.draw(screen)
         for heli in helicopters[:]:
             heli.update()
-            heli.draw(screen)
+            heli.draw(screen, img_aero)
 
         for bomb in bombs[:]:
-            bomb.update()
-            bomb.draw(screen)
+            bomb.update(bombs, enemies, explosions)
+            bomb.draw(screen, bomb_img)
+        draw_text(f'Score: {score}', font, RED, screen, 20, 30)
+        atualizar_pontuacao(caminho_json, nome_jogador,score)
         draw_explosions()
+        # Mostrar mensagem de Game Over se o jogo terminar
+        if game_over:
+            game_over_screen()
         pygame.display.update()
         clock.tick(60)
 
