@@ -1,7 +1,49 @@
+import math
 import random
 
 import pygame
 from config import *
+
+class LevelTransitionText:
+    def __init__(self, text, start_pos, center_pos, font, color, speed):
+        self.text = text
+        self.start_pos = start_pos
+        self.current_pos = list(start_pos)
+        self.center_pos = center_pos
+        self.font = font
+        self.color = color
+        self.speed = speed
+        self.alpha = 255  # Opacidade inicial do texto
+        self.fade_out = False
+
+    def update(self):
+        if not self.fade_out:
+            # Move o texto em direção ao centro
+            direction_x = self.center_pos[0] - self.current_pos[0]
+            direction_y = self.center_pos[1] - self.current_pos[1]
+            distance = math.hypot(direction_x, direction_y)
+
+            if distance > self.speed:
+                self.current_pos[0] += self.speed * direction_x / distance
+                self.current_pos[1] += self.speed * direction_y / distance
+            else:
+                self.current_pos = list(self.center_pos)
+                self.fade_out = True
+        else:
+            # Desaparece o texto
+            if self.alpha > 0:
+                self.alpha -= 5  # Diminui a opacidade
+            else:
+                self.alpha = 0
+
+    def draw(self, surface):
+        text_surface = self.font.render(self.text, True,RED)
+        text_surface.set_alpha(self.alpha)  # Ajusta a opacidade do texto
+        surface.blit(text_surface, self.current_pos)
+
+    def is_done(self):
+        # Verifica se a transição foi concluída
+        return self.alpha == 0
 class Item:
     def __init__(self, pos, item_type, list_img):
         self.x, self.y = pos

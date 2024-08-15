@@ -227,6 +227,7 @@ def draw_explosions():
 
 # Função para verificar se a explosão atingiu algum alienígena
 def check_explosion_hits(explosion):
+    global score
     for enemy in enemies[:]:
         enemy_center = (enemy.x + enemy.width // 2, enemy.y + enemy.height // 2)
         distance = pygame.math.Vector2(enemy_center).distance_to(explosion["pos"])
@@ -239,15 +240,23 @@ def check_explosion_hits(explosion):
 font = pygame.font.SysFont(None, 15)
 
 def main():
+    enemy_timer = 0
+    enemy_count = 0
+    waiting_for_items = False
+    item_wait_timer = 0
     global game_over,score, shield_active, tank_health,tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active,shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
     nome_jogador = get_name.get_player_name(screen)
     verificar_ou_criar_json(caminho_json)
-    enemy_timer = 0
-    enemy_count = 0
-    waiting_for_items = False
-    item_wait_timer = 0
+    level_text = LevelTransitionText(
+        text="Next Stage",
+        start_pos=(50, HEIGHT // 2 -12 ),# Começa fora da tela na parte inferior
+        center_pos=(WIDTH // 2, HEIGHT // 2-20),
+        font=pygame.font.SysFont(None, 50),
+        color=(255, 255, 255),
+        speed=5
+    )
 
 
     while not game_over:
@@ -395,6 +404,12 @@ def main():
         for bomb in bombs[:]:
             bomb.update(bombs, enemies, explosions)
             bomb.draw(screen, bomb_img)
+        if score >= 10:
+            # No loop principal do jogo
+            if not level_text.is_done():
+                level_text.update()
+                level_text.draw(screen)
+
         draw_text(f'Score: {score}', font, RED, screen, 20, 30)
         atualizar_pontuacao(caminho_json, nome_jogador,score)
         draw_explosions()
