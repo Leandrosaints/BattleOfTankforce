@@ -24,7 +24,7 @@ num_repeats = (WIDTH // background_width) + 1
 
 # Imagenso
 tank_img = pygame.image.load("img/tank.png").convert_alpha()
-tank_img = pygame.transform.scale(tank_img, (50, 20))
+tank_img = pygame.transform.scale(tank_img, (70, 20))
 tank_width, tank_height = tank_img.get_size()
 tank_pos = [50, HEIGHT // 2 - tank_height // 3]
 tank_speed = 3
@@ -36,7 +36,8 @@ tank_speed_duration = 3
 aero_active = True
 enemy_img = pygame.image.load("img/Enemy/enemy.png").convert_alpha()
 enemy_img = pygame.transform.scale(enemy_img, (50, 20))
-
+enemy_two = pygame.image.load("img/enemy_two.png").convert_alpha()
+enemy_two = pygame.transform.scale(enemy_two, (50, 20))
 item_images = {
     'health': pygame.image.load("img/itens/healt.png").convert_alpha(),
     'shield': pygame.image.load("img/itens/escudo.png").convert_alpha(),
@@ -93,11 +94,11 @@ class Bullet:
 
 # Classe de Inimigo
 class Enemy:
-    def __init__(self, pos, speed=1, health=3):
+    def __init__(self, img, pos, speed=1, health=3):
         self.x, self.y = pos
         self.speed = speed
         self.health = health
-        self.img = enemy_img
+        self.img = img
         self.width, self.height = self.img.get_size()
         self.shoot_timer = random.randint(30, 120)
         self.moving_to_point = True
@@ -135,9 +136,8 @@ class Enemy:
         if random.random() < 0.5:  # Chance de 50% para dropar um item
             item_type = random.choice(list(item_images.keys()))
             items.append(Item((self.x, self.y), item_type, item_images))
-
 def game_over_screen():
-    global game_over, score
+    global game_over
     game_over = True
     font = pygame.font.SysFont(None, 25)
 
@@ -154,10 +154,13 @@ def game_over_screen():
                 exit()  # Sai do jogo completamente
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    restart_game()  # Função para reiniciar o jogo
+                    restart_game()  # Reinicia o jogo
+                    main()  # Chama a função principal novamente para reiniciar o jogo
+                    return  # Sai da função atual para evitar múltiplas execuções do loop do jogo
                 elif event.key == pygame.K_q:
                     pygame.quit()
                     exit()  # Sai do jogo completamente
+
 
 
 def restart_game():
@@ -244,14 +247,15 @@ def main():
     enemy_count = 0
     waiting_for_items = False
     item_wait_timer = 0
-    global game_over,score, shield_active, tank_health,tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
+    global game_over,score,stage, shield_active, tank_health,tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active,shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
+    stage =0
     nome_jogador = get_name.get_player_name(screen)
     verificar_ou_criar_json(caminho_json)
     level_text = LevelTransitionText(
         text="Next Stage",
-        start_pos=(50, HEIGHT // 2 -12 ),# Começa fora da tela na parte inferior
+        start_pos=(50, HEIGHT // 2 -12 ),# Começa fora da tela lado esquerdo
         center_pos=(WIDTH // 2, HEIGHT // 2-20),
         font=pygame.font.SysFont(None, 50),
         color=(255, 255, 255),
@@ -297,7 +301,7 @@ def main():
 
         screen.fill((0, 0, 0))
         for i in range(num_repeats):
-            screen.blit(background, (i * background_width, 0))
+            screen.blit(background, (i * background_width, 3))
 
         screen.blit(tank_img, tank_pos)
 
@@ -348,7 +352,11 @@ def main():
             if enemy_count < 5:
                 if enemy_timer <= 0:
                     enemy_y = HEIGHT // 2 - 5
-                    enemies.append(Enemy((WIDTH, enemy_y)))
+                    if stage==1:
+                        enemies.append(Enemy(enemy_two, (WIDTH, enemy_y)))
+                    else:
+
+                        enemies.append(Enemy(enemy_img, (WIDTH, enemy_y)))
                     enemy_count += 1
                     enemy_timer = 60
                 else:
@@ -405,6 +413,7 @@ def main():
             bomb.update(bombs, enemies, explosions)
             bomb.draw(screen, bomb_img)
         if score >= 10:
+            stage = 1
             # No loop principal do jogo
             if not level_text.is_done():
                 level_text.update()

@@ -29,6 +29,7 @@ class LevelTransitionText:
             else:
                 self.current_pos = list(self.center_pos)
                 self.fade_out = True
+
         else:
             # Desaparece o texto
             if self.alpha > 0:
