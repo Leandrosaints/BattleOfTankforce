@@ -1,84 +1,88 @@
-import pygame
 import os
+import random
+import pygame
+from config import HEIGHT, WIDTH
 
 class SoldierAnimation:
-    def __init__(self, idle_folder, run_folder, shoot_folder, animation_speed=0.1):
-        self.animation_speed = animation_speed
-        self.current_frame = 0
-        self.time_elapsed = 0
+    def __init__(self, idle_folder, run_folder):
         self.state = 'idle'
+        self.idle_images = self.load_images(idle_folder)
+        self.run_images = self.load_images(run_folder)
+        self.current_images = self.idle_images
+        self.index = 0
+        self.image = self.current_images[self.index]
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (0, 0)
+        self.moving = False
+        # Definindo uma posição-alvo aleatória para cada soldado
+        self.target_pos = (random.randint(WIDTH // 4, 3 * WIDTH // 4), HEIGHT // 2)
 
-        # Carregue as animações de imagens separadas
-        self.animations = {
-            'idle': self.load_frames(idle_folder),
-            'run': self.load_frames(run_folder),
-            'shoot': self.load_frames(shoot_folder)
-        }
-        self.image = self.animations[self.state][0]
-
-    def load_frames(self, folder):
-        frames = []
-        # Liste e ordene os arquivos na pasta
-        for filename in sorted(os.listdir(folder), key=lambda x: int(x.split('_')[1].split('.')[0])):
-            if filename.endswith('.png'):
-                frame_path = os.path.join(folder, filename)
-                frame = pygame.image.load(frame_path).convert_alpha()
-                frames.append(frame)
-        return frames
+    def load_images(self, folder):
+        images = []
+        for filename in sorted(os.listdir(folder)):
+            img = pygame.image.load(os.path.join(folder, filename)).convert_alpha()
+            img = pygame.transform.scale(img, (25, 25))
+            images.append(img)
+        return images
 
     def set_state(self, state):
         if state != self.state:
             self.state = state
-            self.current_frame = 0
-            self.time_elapsed = 0
+            if state == 'idle':
+                self.current_images = self.idle_images
+            elif state == 'run':
+                self.current_images = self.run_images
+            elif state == "agachado":
+                self.ima= pygame.image.load('img/soldier/shoot/sprite_3.png').convert_alpha()
+                self.image = pygame.transform.scale(self.ima, (25, 25))
+            self.index = 0
 
-    def update(self, dt):
-        self.time_elapsed += dt
-        if self.time_elapsed > self.animation_speed:
-            self.time_elapsed = 0
-            self.current_frame = (self.current_frame + 1) % len(self.animations[self.state])
-            self.image = self.animations[self.state][self.current_frame]
+    def update(self):
+        self.index += 0.3
 
-    def draw(self, surface, pos):
-        surface.blit(self.image, pos)
+        if int(self.index) >= len(self.current_images):
+            self.index = 0
+        self.image = self.current_images[int(self.index)]
 
-# Inicialize o pygame
+        if self.moving:
+            self.move()
+        else:
+            self.set_state('agachado')
 
+    def draw(self, surface):
+        surface.blit(self.image, self.rect.topleft)
 
-# Defina o tamanho da tela
+    def set_position(self, pos):
+        self.rect.topleft = pos
 
+    def move_to(self):
+        self.moving = True
+        self.set_state('run')
 
-# Pastas das animações
-idle_folder = 'img/soldier/idle'
-run_folder = 'img/soldier/run'
-shoot_folder = 'img/soldier/shoot'
+    def move(self):
+        if self.target_pos:
+            target_x, target_y = self.target_pos
+            current_x, current_y = self.rect.topleft
+            speed = 1  # Velocidade de movimento
 
-# Crie uma instância da animação do soldado
-#soldier = SoldierAnimation(idle_folder, run_folder, shoot_folder)
+            if abs(current_x - target_x) > speed:
+                if current_x < target_x:
+                    current_x += speed
+                else:
+                    current_x -= speed
+            else:
+                current_x = target_x
 
-# Variável para controlar o tempo
+            if abs(current_y - target_y) > speed:
+                if current_y < target_y:
+                    current_y += speed
+                else:
+                    current_y -= speed
+            else:
+                current_y = target_y
 
-"""
-# Loop principal do jogo
-running = True
-while running:
-    dt = clock.tick(60) / 1000.0  # Delta time em segundos
+            self.rect.topleft = (current_x, current_y)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                soldier.set_state('run')
-            #elif event.key == pygame.K_s:
-                #soldier.set_state('shoot')
-            elif event.key == pygame.K_i:
-                soldier.set_state('idle')
-
-    soldier.update(dt)
-
-    screen.fill((0, 0, 0))
-    soldier.draw(screen, (400, 300))
-    pygame.display.flip()
-
-pygame.quit()"""
+            if (current_x, current_y) == self.target_pos:
+                self.moving = False
+                self.set_state('agachado')

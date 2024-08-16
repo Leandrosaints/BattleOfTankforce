@@ -248,10 +248,13 @@ def main():
     enemy_count = 0
     waiting_for_items = False
     item_wait_timer = 0
-    global game_over, score, stage, shield_active, tank_health, tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
+
+    global game_over, score,soldiers, soldier_move, destination,soldier, stage, shield_active, tank_health, tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active, shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
     stage = 0
+    soldier_move = False
+    destination = 0
     nome_jogador = get_name.get_player_name(screen)
     verificar_ou_criar_json(caminho_json)
     level_text = LevelTransitionText(
@@ -262,14 +265,16 @@ def main():
         color=(255, 255, 255),
         speed=5
     )
-
-    #soldier = None  # Variável para o soldado
+    soldiers = []
     idle_folder = 'img/soldier/idle'
     run_folder = 'img/soldier/run'
-    shoot_folder = 'img/soldier/shoot'
-    soldier = SoldierAnimation(idle_folder, run_folder,
-                               shoot_folder)  # Soldier((0, HEIGHT // 2 - 25))  # Ajuste a posição inicial conforme necessário
-
+    #shoot_folder = 'img/soldier/shoot'
+    for i in range(5):
+        soldier = SoldierAnimation(idle_folder, run_folder)
+        soldier.set_position((i*10, HEIGHT // 2-10))  # Posiciona soldados em uma linha
+        soldiers.append(soldier)
+    #soldier = SoldierAnimation(idle_folder, run_folder)
+    #soldier.set_position((0, HEIGHT // 2-10))
     while not game_over:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -288,7 +293,19 @@ def main():
                     helicopters.append(Bombardeiro(helicopters, bombs, 5))
                     aero_active = False
                 elif event.key == pygame.K_s:  # Tecla para criar o soldado
-                    if soldier is None:  # Adiciona o soldado apenas se ele não estiver presente
+                    # Adiciona o soldado apenas se ele não estiver presente
+                    #soldier.set_state('shoot')
+                    print('ok')
+                    destination = (WIDTH // 2, HEIGHT // 2-8)
+                    if abs(soldier.rect.centerx - destination[0]) <= WIDTH//2 and abs(
+                            soldier.rect.centery - destination[1]) <= WIDTH//2:
+                        #soldier.moving = False
+                        #soldier.set_state('idle')
+
+                        soldier.set_state('run')
+                        soldier_move = True
+                    else:
+                        # Substitua pelos valores desejados
                         soldier.set_state('idle')
         keys = pygame.key.get_pressed()
         moving = False
@@ -298,16 +315,23 @@ def main():
         if keys[pygame.K_RIGHT] and tank_pos[0] < WIDTH - tank_width:
             tank_pos[0] += tank_speed
             moving = True
+        if soldier_move:
+            for soldier in soldiers:
+                soldier.move_to()
+            #move_soldier = False  # Define como False após iniciar o movimento
+        for soldier in soldiers:
+            soldier.update()
 
         if shield_duration <= 0:
             shield_active = False
 
         screen.fill((0, 0, 0))
         for i in range(num_repeats):
-            screen.blit(background, (i * background_width, 3))
+            screen.blit(background, (i * background_width, 5))
 
         screen.blit(tank_img, tank_pos)
-
+        for soldier in soldiers:
+            soldier.draw(screen)
         # Gerar partículas se o tanque estiver se movendo
         if moving:
             particles.append(Particle((tank_pos[0] + tank_width // 2 - 20, tank_pos[1] + tank_height)))
@@ -394,11 +418,7 @@ def main():
                         tank_speed = 3
                 elif item.type == 'aero':
                     aero_active = True
-        dt = clock.tick(60) / 1000.0  # Delta time em segundos
-        # Atualizar e desenhar o soldado, se ele existir
-        if soldier:
-            soldier.update(dt)
-            soldier.draw(screen, (10, 10))
+
 
         hud.update(tank_health, shield_duration, aero_active)
         hud.draw(screen)
@@ -426,7 +446,7 @@ def main():
         # Mostrar mensagem de Game Over se o jogo terminar
         if game_over:
             game_over_screen()
-        pygame.display.update()
+        pygame.display.flip()
         clock.tick(60)
 
     pygame.quit()
