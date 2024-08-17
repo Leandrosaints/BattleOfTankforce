@@ -1,14 +1,9 @@
-import math
-
-import pygame
-import random
-import ctypes
-from config import *
 from hud import HUD
-from get_name_input import IntroInput, draw_text_button, draw_text
+from get_name_input import IntroInput, draw_text
 from dados_json import *
-from functionEss import  *
-from soldier import  SoldierAnimation
+from functionEss import *
+
+
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 
@@ -30,7 +25,7 @@ tank_width, tank_height = tank_img.get_size()
 tank_pos = [50, HEIGHT // 2 - tank_height // 3]
 tank_speed = 3
 tank_health = 3
-shield_active =True# False
+shield_active = True
 shield_duration = 3
 shield_timer = 0
 tank_speed_duration = 3
@@ -46,6 +41,7 @@ item_images = {
     'aero': pygame.image.load("img/itens/icon_aero.png").convert_alpha(),  # Imagem do item de helicóptero
 }
 
+from soldier import SoldierAnimation
 heli_img = pygame.image.load("img/F16.png").convert_alpha()
 img_aero = pygame.transform.scale(heli_img, (70, 18))
 bomb_img = pygame.image.load("img/itens/misseis.png").convert_alpha()
@@ -53,7 +49,8 @@ bomb_img = pygame.transform.scale(bomb_img, (10, 20))
 
 get_name = IntroInput()
 
-# Classe de Partícula
+
+
 class Particle:
     def __init__(self, pos):
         self.x, self.y = pos
@@ -128,7 +125,7 @@ class Enemy:
         pygame.draw.rect(surface, (255, 0, 0),
                          (self.x + 10, self.y - health_bar_height - 2, health_bar_length, health_bar_height))
         pygame.draw.rect(surface, (0, 255, 0), (
-        self.x + 10, self.y - health_bar_height - 2, health_bar_length * health_ratio, health_bar_height))
+            self.x + 10, self.y - health_bar_height - 2, health_bar_length * health_ratio, health_bar_height))
 
     def get_rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
@@ -137,6 +134,8 @@ class Enemy:
         if random.random() < 0.5:  # Chance de 50% para dropar um item
             item_type = random.choice(list(item_images.keys()))
             items.append(Item((self.x, self.y), item_type, item_images))
+
+
 def game_over_screen():
     global game_over
     game_over = True
@@ -163,10 +162,9 @@ def game_over_screen():
                     exit()  # Sai do jogo completamente
 
 
-
 def restart_game():
-    global game_over, score, enemies, bullets, items, tank_pos, enemy_bullets, particles, shield_duration,score
-    global shield_active,shield_timer, aero_active, explosions,helicopters, bombs, tank_health, tank_speed
+    global game_over, score, enemies, bullets, items, tank_pos, enemy_bullets, particles, shield_duration, score
+    global shield_active, shield_timer, aero_active, explosions, helicopters, bombs, tank_health, tank_speed
 
     # Reinicializar variáveis principais
     game_over = False
@@ -209,6 +207,7 @@ def pause():
                     paused = False
         clock.tick(5)
 
+
 # Lista de partículas, tiros, inimigos, itens coletáveis, helicópteros e bombas
 particles = []
 bullets = []
@@ -221,6 +220,8 @@ explosions = []
 explosion_radius_increment = 2
 max_explosion_radius = 50  # Tamanho máximo da explosão
 score = 0
+
+
 def draw_explosions():
     for explosion in explosions[:]:
         pygame.draw.circle(screen, RED, explosion["pos"], explosion["radius"], 2)
@@ -229,6 +230,7 @@ def draw_explosions():
             check_explosion_hits(explosion)
             explosions.remove(explosion)
 
+
 # Função para verificar se a explosão atingiu algum alienígena
 def check_explosion_hits(explosion):
     global score
@@ -236,12 +238,14 @@ def check_explosion_hits(explosion):
         enemy_center = (enemy.x + enemy.width // 2, enemy.y + enemy.height // 2)
         distance = pygame.math.Vector2(enemy_center).distance_to(explosion["pos"])
         if distance <= explosion["radius"]:
-
             enemies.remove(enemy)
             score += 1
             # Atualize o placar ou qualquer outra lógica aqui
+
+
 # Fonte para o texto do score e game over
 font = pygame.font.SysFont(None, 15)
+
 
 def main():
     enemy_timer = 0
@@ -249,7 +253,8 @@ def main():
     waiting_for_items = False
     item_wait_timer = 0
 
-    global game_over, score,soldiers, soldier_move, destination,soldier, stage, shield_active, tank_health, tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
+    global game_over, score, soldiers, soldier_move, destination, soldier, stage, shield_active, tank_health
+    global tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active, shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
     stage = 0
@@ -270,11 +275,11 @@ def main():
     run_folder = 'img/soldier/run'
     #shoot_folder = 'img/soldier/shoot'
     for i in range(5):
-        soldier = SoldierAnimation(idle_folder, run_folder)
-        soldier.set_position((i*10, HEIGHT // 2-10))  # Posiciona soldados em uma linha
+        soldier = SoldierAnimation(idle_folder, run_folder, screen)
+        soldier.set_position((i * 10, HEIGHT // 2 - 10))  # Posiciona soldados em uma linha
         soldiers.append(soldier)
-    #soldier = SoldierAnimation(idle_folder, run_folder)
-    #soldier.set_position((0, HEIGHT // 2-10))
+    """soldier = SoldierAnimation(idle_folder, run_folder)
+    #soldier.set_position((0, HEIGHT // 2-10))"""
     while not game_over:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -293,14 +298,14 @@ def main():
                     helicopters.append(Bombardeiro(helicopters, bombs, 5))
                     aero_active = False
                 elif event.key == pygame.K_s:  # Tecla para criar o soldado
-                    # Adiciona o soldado apenas se ele não estiver presente
-                    #soldier.set_state('shoot')
+                    """# Adiciona o soldado apenas se ele não estiver presente
+                    #soldier.set_state('shoot')"""
                     print('ok')
-                    destination = (WIDTH // 2, HEIGHT // 2-8)
-                    if abs(soldier.rect.centerx - destination[0]) <= WIDTH//2 and abs(
-                            soldier.rect.centery - destination[1]) <= WIDTH//2:
-                        #soldier.moving = False
-                        #soldier.set_state('idle')
+                    destination = (WIDTH // 2, HEIGHT // 2 - 8)
+                    if abs(soldier.rect.centerx - destination[0]) <= WIDTH // 2 and abs(
+                            soldier.rect.centery - destination[1]) <= WIDTH // 2:
+                        """soldier.moving = False
+                        #soldier.set_state('idle')"""
 
                         soldier.set_state('run')
                         soldier_move = True
@@ -318,9 +323,8 @@ def main():
         if soldier_move:
             for soldier in soldiers:
                 soldier.move_to()
-            #move_soldier = False  # Define como False após iniciar o movimento
-        for soldier in soldiers:
-            soldier.update()
+
+
 
         if shield_duration <= 0:
             shield_active = False
@@ -330,9 +334,14 @@ def main():
             screen.blit(background, (i * background_width, 5))
 
         screen.blit(tank_img, tank_pos)
+        #for soldier in soldiers:
+            #soldier.draw(screen)
         for soldier in soldiers:
+            soldier.update()
+            soldier.update_bullets()
             soldier.draw(screen)
-        # Gerar partículas se o tanque estiver se movendo
+
+            # Gerar partículas se o tanque estiver se movendo
         if moving:
             particles.append(Particle((tank_pos[0] + tank_width // 2 - 20, tank_pos[1] + tank_height)))
         for particle in particles:
@@ -418,7 +427,6 @@ def main():
                         tank_speed = 3
                 elif item.type == 'aero':
                     aero_active = True
-
 
         hud.update(tank_health, shield_duration, aero_active)
         hud.draw(screen)
