@@ -2,6 +2,7 @@ import os
 import random
 import pygame
 from config import HEIGHT, WIDTH
+
 class SoldierAnimation:
     def __init__(self, idle_folder, run_folder, screen):
         self.state = 'idle'
@@ -13,12 +14,12 @@ class SoldierAnimation:
         self.rect = self.image.get_rect()
         self.rect.topleft = (0, 0)
         self.moving = False
-        self.bullet = None
         self.screen = screen
-        # Definindo uma posição-alvo aleatória para cada soldado
-        self.target_pos = (random.randint(WIDTH // 4, 3 * WIDTH // 4), HEIGHT // 2-8)
+
+        self.target_pos = (random.randint(WIDTH // 4, 3 * WIDTH // 4), HEIGHT // 2 - 8)
         self.shoot_timer = random.randint(30, 120)
         self.bullets = []
+
     def load_images(self, folder):
         images = []
         for filename in sorted(os.listdir(folder)):
@@ -34,12 +35,13 @@ class SoldierAnimation:
                 self.current_images = self.idle_images
             elif state == 'run':
                 self.current_images = self.run_images
-            elif state == "agachado":
-                self.ima= pygame.image.load('img/soldier/shoot/sprite_3.png').convert_alpha()
+            elif state == 'agachado':
+                self.ima = pygame.image.load('img/soldier/shoot/sprite_3.png').convert_alpha()
                 self.image = pygame.transform.scale(self.ima, (25, 25))
             self.index = 0
 
     def update(self):
+
         self.index += 0.3
         if int(self.index) >= len(self.current_images):
             self.index = 0
@@ -47,19 +49,17 @@ class SoldierAnimation:
 
         if self.moving:
             self.move()
-        else:
-            self.shoot_timer -= 1
-            if self.state == 'agachado':
-                print('saindo aqui ')
-                self.shoot()
-                self.shoot_timer = random.randint(30, 120)
 
-    def draw(self, screen):
 
-        for bullet in self.bullets:
-            bullet.draw(screen)
 
-        self.screen.blit(self.image, self.rect.topleft)
+
+
+    def draw(self, screen, visible):
+        if visible:
+            for bullet in self.bullets:
+                bullet.draw(screen)
+
+            self.screen.blit(self.image, self.rect.topleft)
 
     def set_position(self, pos):
         self.rect.topleft = pos
@@ -72,7 +72,7 @@ class SoldierAnimation:
         if self.target_pos:
             target_x, target_y = self.target_pos
             current_x, current_y = self.rect.topleft
-            speed = 0.5  # Velocidade de movimento
+            speed = 1  # Velocidade de movimento
 
             if abs(current_x - target_x) > speed:
                 if current_x < target_x:
@@ -100,16 +100,27 @@ class SoldierAnimation:
         bullet = Bullet((self.rect.right, self.rect.centery))
         self.bullets.append(bullet)
 
-    def update_bullets(self):
+    def update_bullets(self, enemies):
         for bullet in self.bullets:
             bullet.update()
             if bullet.get_rect().right > WIDTH:
                 self.bullets.remove(bullet)
+            else:
+                for enemy in enemies[:]:
+                    if bullet.get_rect().colliderect(enemy.get_rect()):
+                        #particles.extend([Particle((bullet.x, bullet.y)) for _ in range(5)])
+                        self.bullets.remove(bullet)
+                        enemy.health -= 0.1
+                        if enemy.health <= 0:
+                            enemy.drop_item()  # Adiciona um item quando o inimigo é destruído
+
+                            enemies.remove(enemy)
+                        break
 class Bullet:
     def __init__(self, pos, speed=5):
         self.x, self.y = pos
         self.speed = speed
-        self.size = 5
+        self.size = 2
         self.color = (255, 0, 0)
 
     def update(self):

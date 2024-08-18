@@ -253,11 +253,12 @@ def main():
     waiting_for_items = False
     item_wait_timer = 0
 
-    global game_over, score, soldiers, soldier_move, destination, soldier, stage, shield_active, tank_health
+    global game_over, score, soldiers, soldier_move, visible, destination, soldier, stage, shield_active, tank_health
     global tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active, shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
     stage = 0
+    visible = False
     soldier_move = False
     destination = 0
     nome_jogador = get_name.get_player_name(screen)
@@ -276,7 +277,7 @@ def main():
     #shoot_folder = 'img/soldier/shoot'
     for i in range(5):
         soldier = SoldierAnimation(idle_folder, run_folder, screen)
-        soldier.set_position((i * 10, HEIGHT // 2 - 10))  # Posiciona soldados em uma linha
+        soldier.set_position((i * 15, HEIGHT // 2 - 10))  # Posiciona soldados em uma linha
         soldiers.append(soldier)
     """soldier = SoldierAnimation(idle_folder, run_folder)
     #soldier.set_position((0, HEIGHT // 2-10))"""
@@ -300,18 +301,19 @@ def main():
                 elif event.key == pygame.K_s:  # Tecla para criar o soldado
                     """# Adiciona o soldado apenas se ele não estiver presente
                     #soldier.set_state('shoot')"""
-                    print('ok')
-                    destination = (WIDTH // 2, HEIGHT // 2 - 8)
-                    if abs(soldier.rect.centerx - destination[0]) <= WIDTH // 2 and abs(
-                            soldier.rect.centery - destination[1]) <= WIDTH // 2:
-                        """soldier.moving = False
-                        #soldier.set_state('idle')"""
 
-                        soldier.set_state('run')
-                        soldier_move = True
-                    else:
-                        # Substitua pelos valores desejados
-                        soldier.set_state('idle')
+                    #destination = (WIDTH // 2, HEIGHT // 2 - 8)
+
+
+
+
+                    soldier_move = True
+                    visible = True
+
+
+                    #else:
+                        #print('okkkkk')
+
         keys = pygame.key.get_pressed()
         moving = False
         if keys[pygame.K_LEFT] and tank_pos[0] > 0:
@@ -320,9 +322,7 @@ def main():
         if keys[pygame.K_RIGHT] and tank_pos[0] < WIDTH - tank_width:
             tank_pos[0] += tank_speed
             moving = True
-        if soldier_move:
-            for soldier in soldiers:
-                soldier.move_to()
+
 
 
 
@@ -336,10 +336,21 @@ def main():
         screen.blit(tank_img, tank_pos)
         #for soldier in soldiers:
             #soldier.draw(screen)
+
         for soldier in soldiers:
+
+            if soldier.state == "agachado":
+                soldier.shoot_timer -= 1
+                if soldier.shoot_timer <= 0:
+                    soldier.shoot()
+                    soldier.shoot_timer = random.randint(30, 120)
+                #soldier_move = False
+
+            if soldier_move:
+                soldier.move_to()
             soldier.update()
-            soldier.update_bullets()
-            soldier.draw(screen)
+            soldier.update_bullets(enemies)
+            soldier.draw(screen, visible)
 
             # Gerar partículas se o tanque estiver se movendo
         if moving:
