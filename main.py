@@ -14,7 +14,7 @@ ctypes.windll.user32.SetWindowPos(pygame.display.get_wm_info()['window'], 0, x_p
 clock = pygame.time.Clock()
 game_over = False
 
-background = pygame.image.load('img/bg_3.jpg').convert_alpha()
+background = pygame.image.load('img/bg_4.jpg').convert_alpha()
 background_width = background.get_width()
 num_repeats = (WIDTH // background_width) + 1
 
@@ -76,7 +76,7 @@ class Bullet:
     def __init__(self, pos, speed=5):
         self.x, self.y = pos
         self.speed = speed
-        self.size = 5
+        self.size = 3
         self.color = (255, 0, 0)
 
     def update(self):
@@ -253,7 +253,7 @@ def main():
     waiting_for_items = False
     item_wait_timer = 0
 
-    global game_over, score, soldiers, soldier_move, visible, destination, soldier, stage, shield_active, tank_health
+    global game_over, score, soldiers_aliados, soldier_aliados, soldier_move, visible, destination, soldier, stage, shield_active, tank_health
     global tank_speed_duration, tank_speed, explosions, shield_duration, aero_active
     hud = HUD(tank_health, shield_active, shield_duration, abilities_icons=[item_images['aero']], aero=aero_active)
     caminho_json = 'pontuacoes.json'
@@ -271,16 +271,28 @@ def main():
         color=(255, 255, 255),
         speed=5
     )
-    soldiers = []
-    idle_folder = 'img/soldier/idle'
-    run_folder = 'img/soldier/run'
-    #shoot_folder = 'img/soldier/shoot'
+
+    # Listas para soldados aliados e inimigos
+    soldiers_aliados = []
+    soldiers_enemie = []
+
+    # Caminho das animações para os soldados
+    idle_folder = 'img/soldier_2/idle'
+    run_folder = 'img/soldier_2/run'
+
+    # Criação dos soldados
     for i in range(5):
-        soldier = SoldierAnimation(idle_folder, run_folder, screen)
-        soldier.set_position((i * 15, HEIGHT // 2 - 10))  # Posiciona soldados em uma linha
-        soldiers.append(soldier)
-    """soldier = SoldierAnimation(idle_folder, run_folder)
-    #soldier.set_position((0, HEIGHT // 2-10))"""
+        # Soldado inimigo (flip_img=True)
+        soldier_inimigo = SoldierAnimation(idle_folder, run_folder, screen, flip_img=True)
+        soldier_inimigo.set_position((WIDTH - i * 50, HEIGHT // 2 - 10))
+        soldiers_enemie.append(soldier_inimigo)
+
+        # Soldado aliado (flip_img=False)
+        soldier_aliado = SoldierAnimation(idle_folder, run_folder, screen, flip_img=False)
+        soldier_aliado.set_position((i * 50, HEIGHT // 2 - 10))
+        soldiers_aliados.append(soldier_aliado)
+
+    # Loop principal do jogo
     while not game_over:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -299,20 +311,8 @@ def main():
                     helicopters.append(Bombardeiro(helicopters, bombs, 5))
                     aero_active = False
                 elif event.key == pygame.K_s:  # Tecla para criar o soldado
-                    """# Adiciona o soldado apenas se ele não estiver presente
-                    #soldier.set_state('shoot')"""
-
-                    #destination = (WIDTH // 2, HEIGHT // 2 - 8)
-
-
-
-
                     soldier_move = True
                     visible = True
-
-
-                    #else:
-                        #print('okkkkk')
 
         keys = pygame.key.get_pressed()
         moving = False
@@ -323,9 +323,6 @@ def main():
             tank_pos[0] += tank_speed
             moving = True
 
-
-
-
         if shield_duration <= 0:
             shield_active = False
 
@@ -334,23 +331,35 @@ def main():
             screen.blit(background, (i * background_width, 5))
 
         screen.blit(tank_img, tank_pos)
-        #for soldier in soldiers:
-            #soldier.draw(screen)
 
-        for soldier in soldiers:
-
-            if soldier.state == "agachado":
-                soldier.shoot_timer -= 1
-                if soldier.shoot_timer <= 0:
-                    soldier.shoot()
-                    soldier.shoot_timer = random.randint(30, 120)
-                #soldier_move = False
+        # Atualiza e desenha soldados aliados
+        for soldier_a in soldiers_aliados:
+            if soldier_a.state == "agachado":
+                soldier_a.shoot_timer -= 1
+                if soldier_a.shoot_timer <= 0:
+                    soldier_a.shoot(speed=5)
+                    soldier_a.shoot_timer = random.randint(30, 120)
 
             if soldier_move:
-                soldier.move_to()
-            soldier.update()
-            soldier.update_bullets(enemies)
-            soldier.draw(screen, visible)
+                soldier_a.move_to()
+            soldier_a.update()
+            soldier_a.update_bullets(enemies, rect=None)
+            soldier_a.draw(screen, visible)
+
+        # Atualiza e desenha soldados inimigos
+        for soldier_e in soldiers_enemie:
+            shield_duration, tank_health = soldier_e.update_bullets(soldiers_aliados, rect=(tank_pos[0], tank_pos[1], tank_width, tank_height), shield=shield_duration, health=tank_health)
+            if soldier_e.state == "agachado":
+                soldier_e.shoot_timer -= 1
+                if soldier_e.shoot_timer <= 0:
+                    soldier_e.shoot(speed=-5)
+                    soldier_e.shoot_timer = random.randint(30, 120)
+
+            if soldier_move:
+                soldier_e.move_to()
+            soldier_e.update()
+
+            soldier_e.draw(screen, visible)
 
             # Gerar partículas se o tanque estiver se movendo
         if moving:
