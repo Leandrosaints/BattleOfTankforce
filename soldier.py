@@ -1,7 +1,7 @@
 import os
 import random
 import pygame
-from config import HEIGHT, WIDTH
+from config import HEIGHT, WIDTH, GREEN, RED
 
 class SoldierAnimation:
     def __init__(self, idle_folder, run_folder, screen, flip_img):
@@ -13,7 +13,8 @@ class SoldierAnimation:
         self.index = 0
         self.image = self.current_images[self.index]
         self.rect = self.image.get_rect()
-
+        self.health = 3  # Vida total do soldado
+        self.max_health = self.health  # Vida máxima do soldado
         self.moving = False
         self.screen = screen
 
@@ -40,10 +41,14 @@ class SoldierAnimation:
             elif state == 'run':
                 self.current_images = self.run_images
             elif state == 'agachado':
-                self.ima = pygame.image.load('img/soldier/shoot/sprite_3.png').convert_alpha()
+
+                self.ima = pygame.image.load('img/soldier_2/shoot/sprite_3.png').convert_alpha()
                 self.image = pygame.transform.scale(self.ima, (25, 25))
+
                 if self.flip_images:
-                    self.image = pygame.transform.flip(self.image, True, False)
+                    self.ima1 = pygame.image.load('img/soldier_1/shoot/sprite_3.png').convert_alpha()
+                    self.image = pygame.transform.scale(self.ima1, (25, 25))
+                    self.image = pygame.transform.flip(self.image  , True, False)
             self.index = 0
 
     def update(self):
@@ -61,6 +66,18 @@ class SoldierAnimation:
                 bullet.draw(screen)
 
             self.screen.blit(self.image, self.rect.topleft)
+            # Barra de fundo (saúde total)
+            self.draw_health_bar(screen)
+
+    def draw_health_bar(self, surface):
+        health_bar_length = self.rect.width
+        health_bar_height = 3
+        health_ratio = self.health / 3  # Assumindo que a saúde máxima é 3
+        pygame.draw.rect(surface, (255, 0, 0),
+                         (self.rect.x + 10, self.rect.y - health_bar_height - 2, health_bar_length, health_bar_height))
+        pygame.draw.rect(surface, (0, 255, 0),
+                         (self.rect.x + 10, self.rect.y - health_bar_height - 2, health_bar_length * health_ratio,
+                          health_bar_height))
 
     def set_position(self, pos):
         self.rect.topleft = pos
@@ -113,27 +130,27 @@ class SoldierAnimation:
         bullet = Bullet((self.rect.right, self.rect.centery), speed=speed)
         self.bullets.append(bullet)
 
-    def update_bullets(self, enemies=None, rect=None, shield=None, health=None):
+    def update_bullets(self, enemies=None, rect=None, rect_two=None, shield=None, health=None):
         for bullet in self.bullets[:]:
             bullet.update()
 
             # Remove o bullet se sair dos limites da tela
             if bullet.get_rect().right > WIDTH or bullet.get_rect().left < 0:
                 self.bullets.remove(bullet)
-            elif not self.flip_images:
+
+            #elif self.flip_images:
                 # Verifica colisão com inimigos
-                if enemies is not None:
-                    for enemy in enemies[:]:
-                        if bullet.get_rect().colliderect(enemy.get_rect()):
-                            self.bullets.remove(bullet)
-                            enemy.health -= 0.1
-                            if enemy.health <= 0:
-                                enemy.drop_item()
-                                enemies.remove(enemy)
-                            break
-            else:
-                # Verifica colisão com um rect específico (por exemplo, o tanque)
-                if rect is not None:
+            elif enemies is not None:
+                for enemy in enemies[:]:
+                    if bullet.get_rect().colliderect(enemy.get_rect()):
+                        self.bullets.remove(bullet)
+                        enemy.health -= 0.1
+                        if enemy.health <= 0:
+                            #enemy.drop_item()
+                            enemies.remove(enemy)
+                        break
+                            # Verifica colisão com um rect específico (por exemplo, o tanque)
+                    '''elif rect is not None:
                     if bullet.get_rect().colliderect(pygame.Rect(rect)):
                         self.bullets.remove(bullet)
                         # Reduz o shield e health se forem fornecidos
@@ -145,7 +162,12 @@ class SoldierAnimation:
                                 health -= 0.1
                             if health <= 0:
                                 # Lógica de game over aqui, ou outro tratamento
-                                print("Game Over")
+                                print("Game Over")'''
+
+
+
+
+
         # Retorna valores atualizados de shield e health se forem usados
         return shield, health
 
