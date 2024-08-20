@@ -130,26 +130,53 @@ class SoldierAnimation:
         bullet = Bullet((self.rect.right, self.rect.centery), speed=speed)
         self.bullets.append(bullet)
 
-    def update_bullets(self, enemies=None, rect=None, rect_two=None, shield=None, health=None):
+    def update_bullets(self, enemies=None, enemies_two=None, rect=None, shield=None, health=None):
         for bullet in self.bullets[:]:
             bullet.update()
 
             # Remove o bullet se sair dos limites da tela
-            if bullet.get_rect().right > WIDTH or bullet.get_rect().left < 0:
+            if bullet.x < 0:
+                print('oks')
                 self.bullets.remove(bullet)
-
-            #elif self.flip_images:
-                # Verifica colisão com inimigos
-            elif enemies is not None:
-                for enemy in enemies[:]:
-                    if bullet.get_rect().colliderect(enemy.get_rect()):
+            else:
+                if rect is not None:
+                    if bullet.get_rect().colliderect(pygame.Rect(rect)):
                         self.bullets.remove(bullet)
-                        enemy.health -= 0.1
-                        if enemy.health <= 0:
-                            #enemy.drop_item()
-                            enemies.remove(enemy)
-                        break
-                            # Verifica colisão com um rect específico (por exemplo, o tanque)
+                        # Reduz o shield e health se forem fornecidos
+                        if shield is not None:
+                            shield -= 0.1
+
+                        if health is not None:
+                            if shield is None or shield <= 0:  # Só reduz a saúde se o escudo não estiver ativo
+                                health -= 0.1
+                            if health <= 0:
+                                # Lógica de game over aqui, ou outro tratamento
+                                print("Game Over")
+                if enemies_two is not None:
+
+                    for enemy in enemies_two[:]:
+                        if bullet.get_rect().colliderect(enemy.get_rect()):
+                            try:
+                                self.bullets.remove(bullet)
+                                enemy.health -= 0.1
+                                if enemy.health <= 0:
+                                    enemies_two.remove(enemy)
+                            except:
+                                ...
+                if enemies is not None:
+
+                    for enemy in enemies[:]:
+                        if bullet.get_rect().colliderect(enemy.get_rect()):
+                            try:
+                                self.bullets.remove(bullet)
+                                enemy.health -= 0.1
+                                if enemy.health <= 0:
+                                    enemies.remove(enemy)
+                            except:
+                                ...
+
+
+
                     '''elif rect is not None:
                     if bullet.get_rect().colliderect(pygame.Rect(rect)):
                         self.bullets.remove(bullet)

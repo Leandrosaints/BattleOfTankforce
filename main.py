@@ -357,7 +357,11 @@ def main():
             if moving_enimies:
                 soldier_e.move_to()
             soldier_e.update()
-            soldier_e.update_bullets(soldiers_aliados)
+            shield_duration, tank_health = soldier_e.update_bullets(soldiers_aliados,
+                                                                    rect=(tank_pos[0], tank_pos[1], tank_width, tank_height),
+                                                                    shield=shield_duration,
+                                                                    health=tank_health
+                                                                    )
             soldier_e.draw(screen, visible_enemies)
 
         for soldier_a in soldiers_aliados:
@@ -371,7 +375,8 @@ def main():
 
                 soldier_a.move_to()
             soldier_a.update()
-            soldier_a.update_bullets(soldiers_enemie)
+
+            soldier_a.update_bullets(soldiers_enemie, enemies)
 
             soldier_a.draw(screen, visible_aliados)
             # Gerar partículas se o tanque estiver se movendo
