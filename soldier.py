@@ -136,7 +136,7 @@ class SoldierAnimation:
 
             # Remove o bullet se sair dos limites da tela
             if bullet.x < 0:
-                print('oks')
+
                 self.bullets.remove(bullet)
             else:
                 if rect is not None:

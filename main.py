@@ -49,6 +49,21 @@ bomb_img = pygame.transform.scale(bomb_img, (10, 20))
 
 get_name = IntroInput()
 
+stage_thresholds = {
+    0: 10,
+    1: 20,
+    2: 30,
+    3: 40,
+    4: float('inf')  # Último estágio, sem limite superior
+}
+
+def determine_stage(score, thresholds):
+    for stage, threshold in thresholds.items():
+        if score < threshold:
+            return stage
+    return max(thresholds.keys())
+
+
 
 
 class Particle:
@@ -423,12 +438,15 @@ def main():
                 if enemy_timer <= 0:
                     enemy_y = HEIGHT // 2 - 5
 
+                    stage = determine_stage(score, stage_thresholds)
 
 
-
-                    enemies.append(Enemy(enemy_two, (WIDTH, enemy_y)))
-                    #else:
-                        #enemies.append(Enemy(enemy_img, (WIDTH, enemy_y)))
+                    if stage == 0:
+                        enemies.append(Enemy(enemy_two, (WIDTH, enemy_y)))
+                    if stage == 1:
+                        enemies.append(Enemy(enemy_img, (WIDTH, enemy_y)))
+                    if stage == 2:
+                        enemies.append(Enemy(enemy_img, (WIDTH, enemy_y)))
                     enemy_count += 1
                     enemy_timer = 60
 
@@ -440,6 +458,7 @@ def main():
 
                     waiting_for_items = True
                     item_wait_timer = 300  # Tempo de espera para coleta de itens (5 segundos)
+                    #stage += 1  # Avança para o próximo estágio
 
         if waiting_for_items:
             if item_wait_timer > 0:
@@ -487,9 +506,8 @@ def main():
             bomb.update(bombs, enemies, explosions)
             bomb.draw(screen, bomb_img)
 
-        if score >= 10:
-            stage = 1
-            # No loop principal do jogo
+        if score >= stage_thresholds[stage]:
+            #stage += 1
             if not level_text.is_done():
                 level_text.update()
                 level_text.draw(screen)
